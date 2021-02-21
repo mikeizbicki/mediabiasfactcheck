@@ -4,8 +4,35 @@ import csv
 import glob
 import lxml
 import lxml.html
+import re
 
-images = [
+image_lists = {
+    'bias' : [
+        'Proscience.jpg',
+        'satirelabel.jpg',
+        'extremeright.?.?.?.png',
+        'right.?.?.?.png',
+        'rightcenter.?.?.?.png',
+        'leastbiased.?.?.?.png',
+        'leftcenter.?.?.?.png',
+        'left.?.?.?.png',
+        'extremeleft.?.?.?.png',
+        ],
+    'pseudoscience' : [
+        'pseudo5.png',
+        'pseudo4.png',
+        'pseudo3.png',
+        'pseudo2.png',
+        'pseudo1.png',
+        ],
+    'conspiracy' : [
+        'con5.png',
+        'con4.png',
+        'con3.png',
+        'con2.png',
+        'con1.png'
+        ],
+    'factual' : [
         'MBFCVeryhigh.png',
         'MBFCHigh.png',
         'MBFCMostlyFactual.png',
@@ -13,6 +40,7 @@ images = [
         'MBFCLow.png',
         'MBFCVeryLow.png'
         ]
+    }
 
 xpaths = {
     'name' : '//h1',
@@ -22,18 +50,18 @@ xpaths = {
     #'bias_img' : '//h2/img[1]/@alt',
     #'factual_img' : '//h2/img[2]/@alt',
     #'factual' : "//p[contains(text(),'Factual Reporting')]/span/strong",
-    'factual' : "//p[contains(text(),'Factual Reporting')]/span/strong",
+    #'factual' : "//p[contains(text(),'Factual Reporting')]/span/strong",
     'country' : "//p[contains(text(),'Factual Reporting')]/strong",
     'freedom_rank' : "//p[contains(text(),'Factual Reporting')]/span[2]/strong",
     #'bias' : '//h2/span',
-    'bias' : '(//h3/span)|(//h2/span)|(//header/h1/span)|(//h1[contains(text(),\'QUESTIONABLE\')])|(//h1[contains(text(),\'BIAS\')])|(//h2[contains(text(),\'BIAS\')])|(//h2[contains(text(),\'SATIRE\')])|(//h2[contains(text(),\'SCIENCE\')])', 
+    #'bias' : '(//h3/span)|(//h2/span)|(//header/h1/span)|(//h1[contains(text(),\'QUESTIONABLE\')])|(//h1[contains(text(),\'BIAS\')])|(//h2[contains(text(),\'BIAS\')])|(//h2[contains(text(),\'SATIRE\')])|(//h2[contains(text(),\'SCIENCE\')])', 
     'url' : "(//*[contains(text(),'Source:')]/a/@href)|(//a/span[contains(text(),'https://')])|(//a/span[contains(text(),'http://')])",
     #'url' : "//a[contains(text(),'https://')]",
     }
 compiled_xpaths = { key : lxml.etree.XPath(xpath) for key,xpath in xpaths.items() }
 
 with open('mediabiasfactcheck.csv', 'w', newline='') as csvfile:
-    fieldnames = list(reversed(sorted(['image_bias']+list(xpaths.keys()))))
+    fieldnames = list(reversed(sorted(['image_'+key for key in image_lists.keys()]+list(xpaths.keys()))))
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
@@ -60,12 +88,8 @@ with open('mediabiasfactcheck.csv', 'w', newline='') as csvfile:
                 elif type(element) is lxml.html.HtmlElement:
                     result_str = element.text_content()
             row[key] = result_str.strip()
-        #import pprint
-        #pprint.pprint(row)
-        #print()
-        #if i>10:
-            #asd
-        for image in images:
-            if image in html:
-                row['image_bias']=image
+        for key,patterns in image_lists.items():
+            for pattern in patterns:
+                if re.search(pattern,html):
+                    row['image_'+key] = pattern
         writer.writerow(row)
